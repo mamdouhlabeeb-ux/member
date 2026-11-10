@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل بيانات العميل</title>
+  <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', system-ui, sans-serif; }
+    body { background-color: #f8fafc; color: #0f172a; padding: 16px; line-height: 1.5; }
+    .container { max-width: 520px; margin: 0 auto; }
+    .card { background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .header-banner { background: linear-gradient(135deg, #0f172a, #1e1b4b); color: white; border-radius: 16px; padding: 24px; margin-bottom: 20px; text-align: center; }
+    .header-banner h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+    .header-banner p { font-size: 13px; color: #cbd5e1; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: #1e293b; }
+    .form-group input { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 16px; outline: none; transition: border 0.2s, box-shadow 0.2s; }
+    .form-group input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px #e0e7ff; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; font-size: 14px; font-weight: 700; border-radius: 10px; border: none; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: #0f172a; color: white; width: 100%; }
+    .btn-primary:hover { background: #1e293b; }
+
+    /* شاشة المسح: بيضاء بالكامل، وبتتلف تلقائياً بالعرض لو الموبايل بالطول */
+    #barcodeScreen { display: none; position: fixed; inset: 0; background: #fff; z-index: 99; overflow: hidden; }
+    #scanBox {
+      position: absolute; top: 50%; left: 50%;
+      width: 100vw; height: 100vh; width: 100dvw; height: 100dvh;
+      transform: translate(-50%, -50%);
+      display: flex; flex-direction: column; gap: 4px; padding: 4px; background: #fff;
+    }
+    @media (orientation: portrait) {
+      #scanBox { width: 100vh; height: 100vw; width: 100dvh; height: 100dvw; transform: translate(-50%, -50%) rotate(90deg); }
+    }
+    .scan-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex: 0 0 auto; padding: 0 4px; }
+    .scan-top .nm { font-size: 14px; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .scan-top .tip { font-size: 11px; color: #64748b; white-space: nowrap; }
+    .scan-top button { border: 1px solid #cbd5e1; background: #f1f5f9; color: #334155; border-radius: 8px; padding: 2px 10px; font-size: 12px; font-weight: 700; cursor: pointer; flex: 0 0 auto; }
+    .row { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; }
+    .row canvas { align-self: center; background: #fff; image-rendering: pixelated; image-rendering: crisp-edges; image-rendering: pixelated; }
+    .vals { flex: 0 0 auto; display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 12px; padding: 0 4px; direction: ltr; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.3; color: #334155; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- شاشة إدخال البيانات -->
+    <div id="formScreen">
+      <div class="header-banner">
+        <h1>تسجيل بيانات العميل</h1>
+        <p>من فضلك اكتب بياناتك ثم اضغط إرسال</p>
+      </div>
+
+      <div class="card">
+        <form id="regForm" novalidate>
+          <div class="form-group">
+            <label for="custName">الاسم بالكامل (بالإنجليزي)</label>
+            <input type="text" id="custName" placeholder="Ahmed Mahmoud" dir="ltr" autocomplete="name" autocapitalize="words" required>
+          </div>
+
+          <div class="form-group">
+            <label for="custEmail">البريد الإلكتروني</label>
+            <input type="email" id="custEmail" placeholder="ahmed@example.com" dir="ltr" autocomplete="email" required>
+          </div>
+
+          <div class="form-group">
+            <label for="custPhone">رقم الموبايل</label>
+            <input type="tel" id="custPhone" placeholder="01012345678" dir="ltr" inputmode="tel" autocomplete="tel" style="font-family: 'JetBrains Mono'; font-weight: bold;" required>
+          </div>
+
+          <p id="errorMsg" style="color:#b91c1c; font-size:13px; font-weight:700; margin-bottom:12px; display:none;"></p>
+
+          <button type="submit" class="btn btn-primary">إرسال</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- شاشة المسح (تظهر بعد الإرسال على موبايل العميل) -->
+  <div id="barcodeScreen">
+    <div id="scanBox">
+      <div class="scan-top">
+        <span class="nm" id="displayName"></span>
+        <span class="tip">ارفع السطوع لآخر درجة</span>
+        <button type="button" id="editBtn">✕ تعديل</button>
+      </div>
+
+      <div class="row" id="barcodeRow"><canvas id="barcodeAll"></canvas></div>
+
+      <div class="vals"><span id="valName"></span><span id="valEmail"></span><span id="valPhone"></span></div>
+    </div>
+  </div>
+
+  <script>
+    // اختياري: ضع هنا رابط استقبال البيانات (Google Apps Script / Formspree ...) ليصلك ما يكتبه العميل.
+    // لو تركته فاضي، البيانات لا تُرسل لأي مكان (GitHub Pages لا يحفظ بيانات).
+    const SUBMIT_URL = '';
+
+    // المسافة البيضا على جنبي الباركود (بوحدات الخط). الشاشة حواليه بيضا برضه، فـ 8 كفاية وبتكبّر الخطوط.
+    const QUIET = 8;
+
+    // الاسم لازم بالإنجليزي (السكانر مبيكتبش عربي): نشيل أي حرف مش إنجليزي أثناء الكتابة
+    function cleanName(v) { return v.replace(/[^A-Za-z .'\-]/g, ''); }
+    document.getElementById('custName').addEventListener('input', function () {
+      const cleaned = cleanName(this.value);
+      if (cleaned !== this.value) {
+        this.value = cleaned;
+        showError('اكتب الاسم بالحروف الإنجليزية فقط.');
+      } else if (document.getElementById('errorMsg').innerText.indexOf('الإنجليزية') !== -1) {
+        showError('');
+      }
+    });
+
+    // باركود واحد Code 128 (بيدعم حرف Tab):  الاسم [Tab] الإيميل [Tab][Tab] الموبايل
+    let currentPayload = '';
+
+    function generateBarcodes(name, email, phone) {
+      document.getElementById('displayName').innerText = name;
+      document.getElementById('valName').innerText = name;
+      document.getElementById('valEmail').innerText = email;
+      document.getElementById('valPhone').innerText = phone;
+      currentPayload = name + '\t' + email + '\t\t' + phone;
+    }
+
+    // رسم الباركود بأكبر سمك خط بعدد صحيح من بكسلات الشاشة (من غير تمدد يلخبط السكانر)
+    function renderBarcode() {
+      if (!currentPayload) return;
+      const row = document.getElementById('barcodeRow');
+      const cv = document.getElementById('barcodeAll');
+      const d = window.devicePixelRatio || 1;
+      const availW = Math.floor(row.clientWidth * d);
+      const barH = Math.max(60, Math.floor(row.clientHeight * d));
+      try {
+        // أول رسمة لمعرفة عدد الوحدات الكلي
+        JsBarcode(cv, currentPayload, { format: 'CODE128', width: 1, height: 10, displayValue: false,
+          marginTop: 0, marginBottom: 0, marginLeft: 0, marginRight: 0 });
+        const modules = cv.width;
+        const w = Math.max(1, Math.floor(availW / (modules + 2 * QUIET)));
+        JsBarcode(cv, currentPayload, { format: 'CODE128', width: w, height: barH, displayValue: false,
+          marginTop: 0, marginBottom: 0, marginLeft: QUIET * w, marginRight: QUIET * w });
+        cv.style.width = Math.min(cv.width / d, row.clientWidth) + 'px';
+        cv.style.height = (cv.height / d) + 'px';
+      } catch (e) { console.error(e); }
+    }
+
+    function rerenderIfOpen() {
+      if (document.getElementById('barcodeScreen').style.display === 'block') renderBarcode();
+    }
+    window.addEventListener('resize', rerenderIfOpen);
+    window.addEventListener('orientationchange', function () { setTimeout(rerenderIfOpen, 250); });
+
+    // يمنع الشاشة تقفل أو تقلل السطوع أثناء المسح (لو المتصفح يدعم)
+    let wakeLock = null;
+    async function keepAwake(on) {
+      try {
+        if (on && 'wakeLock' in navigator) wakeLock = await navigator.wakeLock.request('screen');
+        else if (wakeLock) { await wakeLock.release(); wakeLock = null; }
+      } catch (e) { /* تجاهل */ }
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorMsg');
+      el.innerText = msg;
+      el.style.display = msg ? 'block' : 'none';
+    }
+
+    document.getElementById('regForm').addEventListener('submit', async function (ev) {
+      ev.preventDefault();
+      const name = cleanName(document.getElementById('custName').value).replace(/\s+/g, ' ').trim();
+      const email = document.getElementById('custEmail').value.trim();
+      const phone = document.getElementById('custPhone').value.trim();
+
+      if (!/^[A-Za-z]/.test(name)) return showError('من فضلك اكتب الاسم بالحروف الإنجليزية.');
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError('من فضلك اكتب بريد إلكتروني صحيح.');
+      if (!/^\+?[0-9]{10,15}$/.test(phone)) return showError('من فضلك اكتب رقم موبايل صحيح (أرقام فقط).');
+      showError('');
+
+      if (SUBMIT_URL) {
+        try {
+          await fetch(SUBMIT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ name: name, email: email, phone: phone })
+          });
+        } catch (e) { /* لا نمنع ظهور الباركود لو فشل الإرسال */ }
+      }
+
+      generateBarcodes(name, email, phone);
+      document.getElementById('barcodeScreen').style.display = 'block';
+      renderBarcode();
+      keepAwake(true);
+    });
+
+    document.getElementById('editBtn').addEventListener('click', function () {
+      document.getElementById('barcodeScreen').style.display = 'none';
+      keepAwake(false);
+    });
+  </script>
+</body>
+</html>
