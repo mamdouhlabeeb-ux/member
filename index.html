@@ -114,7 +114,7 @@
       }
     });
 
-    // باركود واحد Code 128 (بيدعم حرف Tab):  الاسم [Tab] الإيميل [Tab][Tab] الموبايل
+    // باركود واحد Code 128 (بيدعم حرف Tab):  الاسم [Tab] الإيميل [Tab] الموبايل
     let currentPayload = '';
 
     function generateBarcodes(name, email, phone) {
@@ -122,7 +122,7 @@
       document.getElementById('valName').innerText = name;
       document.getElementById('valEmail').innerText = email;
       document.getElementById('valPhone').innerText = phone;
-      currentPayload = name + '\t' + email + '\t\t' + phone;
+      currentPayload = name + '\t' + email + '\t' + phone;
     }
 
     // رسم الباركود بأكبر سمك خط بعدد صحيح من بكسلات الشاشة (من غير تمدد يلخبط السكانر)
