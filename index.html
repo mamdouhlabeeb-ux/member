@@ -158,7 +158,8 @@
     }
 
     /* ---------- بناء باركود على كانفس منفصل ---------- */
-    function buildBarcodeCanvas(text, moduleWidth, barHeight) {
+    function buildBarcodeCanvas(text, moduleWidth, barHeight, quietModules) {
+      const q = (typeof quietModules === 'number') ? quietModules : QUIET_MODULES;
       const c = document.createElement('canvas');
       JsBarcode(c, text, {
         format: FORMAT,
@@ -166,8 +167,8 @@
         height: barHeight,
         displayValue: false,
         margin: 0,
-        marginLeft: QUIET_MODULES * moduleWidth,
-        marginRight: QUIET_MODULES * moduleWidth
+        marginLeft: q * moduleWidth,
+        marginRight: q * moduleWidth
       });
       return c;
     }
@@ -196,6 +197,8 @@
       ctx.fillRect(0, 0, vw, vh);
 
       const portrait = cssH > cssW;
+      // زرار "عرضي" مالوش لازمة في الوضع العرضي (الباركود عرضي أصلًا)
+      document.getElementById('rotBtn').style.display = portrait ? '' : 'none';
       // لو المستخدم ضغط زرار "عرضي" → نرسم بالعرض دايمًا. غير كده: تلقائي (طولي بيستخدم طول الشاشة)
       const rotated = portrait && !forceHorizontal;
       const text = customer.name + '\t' + customer.email + '\t' + customer.phone;
@@ -214,19 +217,20 @@
       const barHeight = rotated ? vw : (vh - topBar - bottomBar);
       if (lengthAvailable < 100 || barHeight < 50) return;
 
-      // 3) عرض الموديول = عدد صحيح من بكسلات الشاشة (مفيش كسور = مفيش Blur)
-      let w = Math.floor(lengthAvailable / (modules + QUIET_MODULES * 2));
+      // 3) عرض الموديول = أكبر عدد صحيح ممكن من بكسلات الشاشة (مفيش كسور = مفيش Blur)
+      //    طولي: 10 موديول أبيض جوه الكانفس (منطقة السكات الهادية)
+      //    عرضي: من غير هامش جوه الكانفس — الشاشة البيضا كلها هي الهامش،
+      //          وكده الباركود ياخد عرض الشاشة بالكامل بدل ما يبقى صغير في النص
+      const quiet = rotated ? QUIET_MODULES : 0;
+      let w = Math.floor(lengthAvailable / (modules + quiet * 2));
       if (w < 1) w = 1;
 
-      const bars = buildBarcodeCanvas(text, w, barHeight);
+      const bars = buildBarcodeCanvas(text, w, barHeight, quiet);
       const codeLen = bars.width;
 
-      // لو الباركود أطول من المساحة المتاحة (شاشة ضيقة في الوضع العرضي) نصغّره بالكامل
-      // بدل ما يتقص أول/آخر الباركود (وده كان هيمنع القراءة تمامًا)
+      // لو الباركود أطول من المساحة المتاحة نصغّره بالكامل بدل ما يتقص طرفه
       const overflow = codeLen > lengthAvailable;
       const drawLen = Math.min(codeLen, lengthAvailable);
-      const moduleCss = w / d;              // عرض الخط بالـ CSS px (أقل من 1 = رفيع جدًا)
-      const tooThin = moduleCss < 1;
       ctx.imageSmoothingEnabled = overflow;
 
       // 4) الرسم على الشاشة
@@ -242,19 +246,18 @@
 
         document.getElementById('scanHint').textContent = overflow
           ? 'الباركود طويل على الشاشة دي · جرّب شاشة أكبر'
-          : 'سطوع كامل · 10–20 سم · لف الموبايل بالعرض';
+          : 'سطوع كامل · 10–20 سم';
       } else {
+        // الباركود بالعرض وبعرض الشاشة كله — من غير ما تلف الموبايل
         const x = Math.max(0, Math.round((vw - drawLen) / 2));
         const y = topBar;
         ctx.drawImage(bars, 0, 0, codeLen, barHeight, x, y, drawLen, barHeight);
 
         document.getElementById('scanHint').textContent = overflow
-          ? 'الوضع العرضي مضغوط على الشاشة دي · لف الموبايل بالعرض'
-          : tooThin
-            ? 'الوضع العرضي ضعيف على الشاشة دي · لف الموبايل بالعرض'
-            : (portrait && forceHorizontal)
-              ? 'وضع عرضي · لو السكانر مش قارئ لف الموبايل بالعرض'
-              : 'سطوع كامل · 10–20 سم';
+          ? 'الباركود أطول من عرض الشاشة دي'
+          : (portrait && forceHorizontal)
+            ? 'وضع عرضي · بعرض الشاشة · سطوع كامل · 10–20 سم'
+            : 'سطوع كامل · 10–20 سم';
       }
     }
 
@@ -300,27 +303,18 @@
       setTimeout(scheduleRender, 150);
     });
 
-    /* ---------- زر "عرضي": يحوّل الباركود من طولي لعرضي ---------- */
+    /* ---------- زر "عرضي": يحوّل الباركود من طولي لعرضي (من غير لف الموبايل) ---------- */
     const rotBtn = document.getElementById('rotBtn');
     rotBtn.addEventListener('click', async function () {
       forceHorizontal = !forceHorizontal;
       rotBtn.textContent = forceHorizontal ? '↕ طولي' : '↔ عرضي';
 
+      // بنكبر الشاشة بس (مفيش لف للموبايل — الباركود نفسه بيتظبط على عرض الشاشة)
       if (forceHorizontal) {
-        // نحاول نكبّر الشاشة ونلفها بالعرض عشان الباركود يبقى أعرض وأوضح
         try {
           if (!document.fullscreenElement) {
             await document.getElementById('barcodeScreen').requestFullscreen();
           }
-        } catch (e) { /* تجاهل */ }
-        try {
-          if (screen.orientation && screen.orientation.lock) {
-            await screen.orientation.lock('landscape');
-          }
-        } catch (e) { /* مش مدعوم — عادي */ }
-      } else {
-        try {
-          if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
         } catch (e) { /* تجاهل */ }
       }
 
@@ -335,6 +329,11 @@
     /* ---------- إظهار شاشة الباركود ---------- */
     function openBarcode() {
       document.getElementById('displayName').textContent = customer.name;
+
+      // كل مرة بتفتح الباركود يبدأ طولي (الوضع الطبيعي) لحد ما تدوس "عرضي"
+      forceHorizontal = false;
+      const rb = document.getElementById('rotBtn');
+      if (rb) rb.textContent = '↔ عرضي';
 
       const scr = document.getElementById('barcodeScreen');
       scr.style.display = 'block';
