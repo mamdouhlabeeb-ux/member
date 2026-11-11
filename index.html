@@ -26,61 +26,40 @@
     .btn-primary:hover { background: #1e293b; }
 
     /* ================= شاشة الباركود ================= */
-    #barcodeScreen { display: none; position: fixed; inset: 0; z-index: 99; background: #ffffff; color: #000000; }
-    #scanBox { position: absolute; inset: 0; display: flex; flex-direction: column; background: #ffffff; }
+    #barcodeScreen {
+      display: none; position: fixed; inset: 0; z-index: 99;
+      background: #ffffff; color: #000000; overflow: hidden;
+      user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
+    }
 
+    /* الرسم بياخد الشاشة كلها بالكامل — مفيش أي UI بيقص منه */
+    #barcodeAll { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+    /* شريط علوي رفيع جدًا فوق المنطقة البيضا (الـ Quiet Zone) */
     .scan-top {
-      flex: 0 0 auto; display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
-      padding: 10px 14px; padding-top: calc(10px + env(safe-area-inset-top));
-      border-bottom: 1px solid #f1f5f9;
+      position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+      display: flex; align-items: center; gap: 6px;
+      min-height: 24px; padding: 2px 8px;
+      background: #ffffff;
     }
     .scan-top .nm {
-      flex: 1 1 120px; min-width: 0; font-size: 15px; font-weight: 800;
+      flex: 1 1 auto; min-width: 0; font-size: 12px; font-weight: 800; line-height: 1.2;
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       direction: ltr; text-align: right;
     }
-    .scan-actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
-
-    .seg { display: inline-flex; align-items: center; background: #f1f5f9; border-radius: 999px; padding: 2px; }
-    .seg button {
-      border: 0; background: transparent; color: #475569; font: inherit; font-size: 12px; font-weight: 700;
-      padding: 5px 10px; border-radius: 999px; cursor: pointer; transition: background .15s, color .15s;
-    }
-    .seg button.on { background: #0f172a; color: #ffffff; }
-
+    .scan-actions { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
     .chip {
       border: 1px solid #cbd5e1; background: #ffffff; color: #334155; border-radius: 999px;
-      padding: 6px 10px; font: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
+      padding: 3px 9px; font: inherit; font-size: 11px; font-weight: 700; line-height: 1.3; cursor: pointer;
     }
-    .chip.ghost { background: #f8fafc; }
 
-    /* منطقة الباركود: بيضا بالكامل حول الباركود = Quiet Zone طبيعي */
-    #barcodeArea {
-      flex: 1 1 auto; min-height: 0; display: flex; align-items: center; justify-content: center;
-      overflow: hidden; background: #ffffff;
-    }
-    #barcodeAll { display: block; max-width: 100%; }
-    /* image-rendering: auto — أحسن من pixelated لو احتاج المتصفح يصغّر الرسمة */
-
+    /* شريط سفلي رفيع للتلميح */
     .scan-foot {
-      flex: 0 0 auto; padding: 8px 14px;
-      padding-bottom: calc(12px + env(safe-area-inset-bottom));
-      text-align: center; border-top: 1px solid #f1f5f9;
-    }
-    /* النص المقروء (HRI) تحت الباركود — فونت مونوسبيس عريض وواضح */
-    .hri {
-      font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 16px;
-      letter-spacing: .03em; direction: ltr; word-break: break-all; color: #000000; line-height: 1.35;
-    }
-    .sub {
-      margin-top: 2px; font-family: 'JetBrains Mono', monospace; font-weight: 500; font-size: 12px;
-      color: #64748b; direction: ltr; word-break: break-all;
-    }
-    .hint { margin-top: 4px; font-size: 11px; color: #94a3b8; font-weight: 600; }
-    .warn {
-      display: none; margin-top: 6px; background: #fef3c7; color: #92400e;
-      border: 1px solid #fde68a; border-radius: 8px; padding: 6px 8px;
-      font-size: 11.5px; font-weight: 700; line-height: 1.4;
+      position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 16px; padding: 1px 8px;
+      background: #ffffff; font-size: 10px; font-weight: 600; color: #94a3b8;
+      white-space: nowrap; overflow: hidden;
     }
   </style>
 </head>
@@ -119,56 +98,43 @@
     </div>
   </div>
 
-  <!-- شاشة الباركود (تظهر بعد الإرسال) -->
+  <!-- شاشة الباركود: باركود واحد فيه كل البيانات -->
   <div id="barcodeScreen">
-    <div id="scanBox">
-      <div class="scan-top">
-        <span class="nm" id="displayName"></span>
-        <div class="scan-actions">
-          <div class="seg" id="modeSeg" role="group" aria-label="نوع الباركود">
-            <button type="button" data-mode="phone" class="on">الموبايل</button>
-            <button type="button" data-mode="full">الكل</button>
-          </div>
-          <button type="button" class="chip ghost" id="fsBtn">تكبير</button>
-          <button type="button" class="chip" id="editBtn">✕</button>
-        </div>
-      </div>
+    <canvas id="barcodeAll"></canvas>
 
-      <!-- الباركود: الخلفية بيضا بالكامل حواليه -->
-      <div id="barcodeArea"><canvas id="barcodeAll"></canvas></div>
-
-      <div class="scan-foot">
-        <div class="hri" id="hriText"></div>
-        <div class="sub" id="subText"></div>
-        <div class="hint">ارفع سطوع الشاشة لآخر درجة · قرّب السكانر 10–20 سم</div>
-        <div class="warn" id="densityWarn">الباركود مضغوط على الشاشة دي — اضغط «الموبايل» عشان يتقري أسرع وأسهل.</div>
+    <div class="scan-top">
+      <span class="nm" id="displayName"></span>
+      <div class="scan-actions">
+        <button type="button" class="chip" id="rotBtn">↔ عرضي</button>
+        <button type="button" class="chip" id="fsBtn">تكبير</button>
+        <button type="button" class="chip" id="editBtn">✕ تعديل</button>
       </div>
     </div>
+
+    <div class="scan-foot" id="scanHint">سطوع كامل · 10–20 سم</div>
   </div>
 
   <script>
     /* =========================================================================
-       ملاحظات مهمة (سبب إن السكانر ماكانش بيقرا):
-       1) الباركود مش فونت — هو خطوط بتترسم بالبكسل. أي "فونت باركود" بيبقى أسوأ
-          لأن الكيرنينج والـ Hinting بيبوّظوا عرض الخطوط. JsBarcode أدق بكتير.
-       2) باركود 1D (Code 128) لو حطيت فيه اسم + إيميل + موبايل = ~560 موديول.
-          على شاشة موبايل عرض الموديول بيبقى أقل من 0.1 مم = مستحيل يتقري.
-          الحل: الباركود الأساسي = رقم الموبايل بس (عرض الخط أكبر ~5 مرات).
-       3) الرسم هنا بأبعاد بكسل صحيحة (مضاعفات كاملة) بدون أي تمدد أو Blur.
-       4) الفونت اللي تحت الباركود (HRI) = JetBrains Mono Bold، وده أوضح فونت
-          مونوسبيس للأرقام، لكنه مش بيأثر على القراءة نفسها.
+       باركود واحد Code 128 فيه:  الاسم [Tab] الإيميل [Tab] الموبايل
+       -------------------------------------------------------------------------
+       ليه التعديل ده بيخلي السكانر يقراه؟
+       1) الباركود مش "فونت" — هو خطوط بتترسم بالبكسل. أي فونت باركود بيبقى أسوأ
+          لأن الكيرنينج والـ Hinting بيغيّروا عرض الخطوط. JsBarcode أدق.
+       2) المساحة المستخدمة للباركود = الشاشة بالكامل (مفيش هوامش أو أشرطة تاكل منها).
+       3) على الموبايل بالطول الباركود بيتلف 90° وقت الرسم نفسه (مش CSS transform)
+          عشان الطول المتاح يبقى طول الشاشة (844px) بدل عرضها (390px) = خطوط أتخن.
+       4) عرض كل خط = عدد صحيح من بكسلات الشاشة + أسود/أبيض نقي بدون Blur،
+          وده اللي بيخلي السكانر يفرّق بين الخطوط بسرعة.
        ========================================================================= */
 
-    // اختياري: رابط استقبال البيانات (Google Apps Script / Formspree ...)
-    const SUBMIT_URL = '';
+    const SUBMIT_URL = '';          // اختياري: رابط استقبال البيانات
+    const FORMAT = 'CODE128';       // أفضل باركود 1D للبيانات المتغيرة
+    const QUIET_MODULES = 10;       // الهامش الأبيض المطلوب حوالين الباركود
 
-    const FORMAT = 'CODE128';    // أفضل باركود 1D للبيانات المتغيرة + أرقام
-    const QUIET_MODULES = 6;     // هامش أبيض (الموديول) على كل جنب
-    const MIN_MODULE_CSS = 1.4;  // أقل عرض مقبول للموديول بالـ CSS px
-
-    let customer = null;         // { name, email, phone }
-    let mode = 'phone';          // 'phone' | 'full'
+    let customer = null;            // { name, email, phone }
     let barcodeOpen = false;
+    let forceHorizontal = false;    // وضع "عرضي" — الباركود بالعرض مش بالطول
     let wakeLock = null;
     let resizeRaf = 0;
 
@@ -191,73 +157,104 @@
       el.style.display = msg ? 'block' : 'none';
     }
 
-    /* ---------- نص الباركود حسب الوضع ---------- */
-    function currentBarcodeText() {
-      if (!customer) return '';
-      return mode === 'full'
-        ? customer.name + '\t' + customer.email + '\t' + customer.phone
-        : customer.phone;
+    /* ---------- بناء باركود على كانفس منفصل ---------- */
+    function buildBarcodeCanvas(text, moduleWidth, barHeight) {
+      const c = document.createElement('canvas');
+      JsBarcode(c, text, {
+        format: FORMAT,
+        width: moduleWidth,
+        height: barHeight,
+        displayValue: false,
+        margin: 0,
+        marginLeft: QUIET_MODULES * moduleWidth,
+        marginRight: QUIET_MODULES * moduleWidth
+      });
+      return c;
     }
 
-    function updateLabels() {
-      if (!customer) return;
-      const hri = document.getElementById('hriText');
-      const sub = document.getElementById('subText');
-      if (mode === 'full') {
-        hri.textContent = customer.name + '   ' + customer.email + '   ' + customer.phone;
-        sub.textContent = '';
-      } else {
-        hri.textContent = customer.phone;
-        sub.textContent = customer.name + '  ·  ' + customer.email;
-      }
-    }
-
-    /* ---------- رسم الباركود بدون Blur ---------- */
+    /* ---------- الرسم: الشاشة كلها + لف طبيعي على الموبايل ---------- */
     function renderBarcode() {
-      const area = document.getElementById('barcodeArea');
-      const cv = document.getElementById('barcodeAll');
-      const warn = document.getElementById('densityWarn');
       if (!customer) return;
 
+      const cv = document.getElementById('barcodeAll');
+      const ctx = cv.getContext('2d');
       const d = Math.max(1, window.devicePixelRatio || 1);
-      const availW = Math.floor(area.clientWidth * d);
-      const availH = Math.floor(area.clientHeight * d);
-      if (availW < 60 || availH < 40) return;
 
-      const text = currentBarcodeText();
-      if (!text) return;
+      const cssW = cv.clientWidth;
+      const cssH = cv.clientHeight;
+      if (cssW < 80 || cssH < 60) return;
 
-      try {
-        // 1) قياس عدد الموديولات المطلوبة للنص
-        JsBarcode(cv, text, {
-          format: FORMAT, width: 1, height: 10, displayValue: false, margin: 0
-        });
-        const modules = cv.width;
+      const vw = Math.max(1, Math.floor(cssW * d));
+      const vh = Math.max(1, Math.floor(cssH * d));
 
-        // 2) عرض الموديول = عدد صحيح من بكسلات الشاشة (يمنع التداخل/الضبابية)
-        let w = Math.floor(availW / (modules + QUIET_MODULES * 2));
-        if (w < 1) w = 1;
+      if (cv.width !== vw) cv.width = vw;
+      if (cv.height !== vh) cv.height = vh;
 
-        // 3) الرسم النهائي: خطوط سودا نقية + أطول ارتفاع ممكن
-        JsBarcode(cv, text, {
-          format: FORMAT,
-          width: w,
-          height: availH,
-          displayValue: false,
-          margin: 0,
-          marginLeft: QUIET_MODULES * w,
-          marginRight: QUIET_MODULES * w
-        });
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.imageSmoothingEnabled = false;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, vw, vh);
 
-        // عرض الكانفس بنفس مقاس البكسلات الفعلي (1:1) — مفيش تمدد
-        cv.style.width = (cv.width / d) + 'px';
-        cv.style.height = (cv.height / d) + 'px';
+      const portrait = cssH > cssW;
+      // لو المستخدم ضغط زرار "عرضي" → نرسم بالعرض دايمًا. غير كده: تلقائي (طولي بيستخدم طول الشاشة)
+      const rotated = portrait && !forceHorizontal;
+      const text = customer.name + '\t' + customer.email + '\t' + customer.phone;
 
-        // تحذير لو الخطوط بقت أرفع من اللازم
-        const moduleCss = w / d;
-        warn.style.display = (moduleCss < MIN_MODULE_CSS) ? 'block' : 'none';
-      } catch (e) {
-        console.error(e);
+      // 1) قياس عدد الموديولات المطلوبة للنص
+      const probe = document.createElement('canvas');
+      JsBarcode(probe, text, { format: FORMAT, width: 1, height: 1, displayValue: false, margin: 0 });
+      const modules = probe.width;
+      if (!modules) return;
+
+      // 2) الطول المتاح = طول الشاشة بالكامل (بدون أي خصم)
+      //    ارتفاع الخطوط = العرض الكامل في الوضع الطولي، وارتفاع الشاشة في العرضي
+      const lengthAvailable = rotated ? vh : vw;
+      const topBar = Math.round(28 * d);     // الشريط العلوي (فوق المنطقة البيضا)
+      const bottomBar = Math.round(18 * d);  // الشريط السفلي
+      const barHeight = rotated ? vw : (vh - topBar - bottomBar);
+      if (lengthAvailable < 100 || barHeight < 50) return;
+
+      // 3) عرض الموديول = عدد صحيح من بكسلات الشاشة (مفيش كسور = مفيش Blur)
+      let w = Math.floor(lengthAvailable / (modules + QUIET_MODULES * 2));
+      if (w < 1) w = 1;
+
+      const bars = buildBarcodeCanvas(text, w, barHeight);
+      const codeLen = bars.width;
+
+      // لو الباركود أطول من المساحة المتاحة (شاشة ضيقة في الوضع العرضي) نصغّره بالكامل
+      // بدل ما يتقص أول/آخر الباركود (وده كان هيمنع القراءة تمامًا)
+      const overflow = codeLen > lengthAvailable;
+      const drawLen = Math.min(codeLen, lengthAvailable);
+      const moduleCss = w / d;              // عرض الخط بالـ CSS px (أقل من 1 = رفيع جدًا)
+      const tooThin = moduleCss < 1;
+      ctx.imageSmoothingEnabled = overflow;
+
+      // 4) الرسم على الشاشة
+      if (rotated) {
+        // ندير الرسم 90° بنفس الكانفس → الطول ياخد طول الشاشة كله
+        const x = Math.round((vw - barHeight) / 2);
+        const y = Math.max(0, Math.round((vh - drawLen) / 2));
+        ctx.save();
+        ctx.translate(x + barHeight, y);
+        ctx.rotate(Math.PI / 2);
+        ctx.drawImage(bars, 0, 0, codeLen, barHeight, 0, 0, drawLen, barHeight);
+        ctx.restore();
+
+        document.getElementById('scanHint').textContent = overflow
+          ? 'الباركود طويل على الشاشة دي · جرّب شاشة أكبر'
+          : 'سطوع كامل · 10–20 سم · لف الموبايل بالعرض';
+      } else {
+        const x = Math.max(0, Math.round((vw - drawLen) / 2));
+        const y = topBar;
+        ctx.drawImage(bars, 0, 0, codeLen, barHeight, x, y, drawLen, barHeight);
+
+        document.getElementById('scanHint').textContent = overflow
+          ? 'الوضع العرضي مضغوط على الشاشة دي · لف الموبايل بالعرض'
+          : tooThin
+            ? 'الوضع العرضي ضعيف على الشاشة دي · لف الموبايل بالعرض'
+            : (portrait && forceHorizontal)
+              ? 'وضع عرضي · لو السكانر مش قارئ لف الموبايل بالعرض'
+              : 'سطوع كامل · 10–20 سم';
       }
     }
 
@@ -267,20 +264,6 @@
         if (barcodeOpen) renderBarcode();
       });
     }
-
-    function setMode(m) {
-      mode = m;
-      document.querySelectorAll('#modeSeg button').forEach(function (b) {
-        b.classList.toggle('on', b.dataset.mode === m);
-      });
-      updateLabels();
-      renderBarcode();
-    }
-
-    document.getElementById('modeSeg').addEventListener('click', function (ev) {
-      const btn = ev.target.closest('button[data-mode]');
-      if (btn) setMode(btn.dataset.mode);
-    });
 
     /* ---------- إبقاء الشاشة صاحية ---------- */
     async function keepAwake(on) {
@@ -299,7 +282,7 @@
       if (document.visibilityState === 'visible' && barcodeOpen) keepAwake(true);
     });
 
-    /* ---------- تكبير الشاشة (Fullscreen) ---------- */
+    /* ---------- تكبير الشاشة ---------- */
     const fsBtn = document.getElementById('fsBtn');
     fsBtn.addEventListener('click', async function () {
       try {
@@ -314,23 +297,58 @@
 
     document.addEventListener('fullscreenchange', function () {
       fsBtn.textContent = document.fullscreenElement ? 'تصغير' : 'تكبير';
-      setTimeout(scheduleRender, 120);
+      setTimeout(scheduleRender, 150);
     });
 
-    /* ---------- إعادة الرسم عند تغيير المقاس/الاتجاه ---------- */
+    /* ---------- زر "عرضي": يحوّل الباركود من طولي لعرضي ---------- */
+    const rotBtn = document.getElementById('rotBtn');
+    rotBtn.addEventListener('click', async function () {
+      forceHorizontal = !forceHorizontal;
+      rotBtn.textContent = forceHorizontal ? '↕ طولي' : '↔ عرضي';
+
+      if (forceHorizontal) {
+        // نحاول نكبّر الشاشة ونلفها بالعرض عشان الباركود يبقى أعرض وأوضح
+        try {
+          if (!document.fullscreenElement) {
+            await document.getElementById('barcodeScreen').requestFullscreen();
+          }
+        } catch (e) { /* تجاهل */ }
+        try {
+          if (screen.orientation && screen.orientation.lock) {
+            await screen.orientation.lock('landscape');
+          }
+        } catch (e) { /* مش مدعوم — عادي */ }
+      } else {
+        try {
+          if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
+        } catch (e) { /* تجاهل */ }
+      }
+
+      setTimeout(scheduleRender, 350);
+    });
+
+    /* ---------- إعادة الرسم عند أي تغيير في المقاس ---------- */
     window.addEventListener('resize', scheduleRender);
     window.addEventListener('orientationchange', function () { setTimeout(scheduleRender, 300); });
-    if (window.ResizeObserver) {
-      new ResizeObserver(scheduleRender).observe(document.getElementById('barcodeArea'));
-    }
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', scheduleRender);
 
     /* ---------- إظهار شاشة الباركود ---------- */
     function openBarcode() {
       document.getElementById('displayName').textContent = customer.name;
-      updateLabels();
-      document.getElementById('barcodeScreen').style.display = 'block';
+
+      const scr = document.getElementById('barcodeScreen');
+      scr.style.display = 'block';
       barcodeOpen = true;
+
+      // نستغل الشاشة كلها: Fullscreen لو المتصفح سامح (بيشيل شريط العنوان)
+      try {
+        if (!document.fullscreenElement && scr.requestFullscreen) {
+          scr.requestFullscreen().catch(function () {});
+        }
+      } catch (e) { /* تجاهل */ }
+
       keepAwake(true);
+
       // ننتظر لقطة رسم واحدة عشان الأبعاد تتحسب صح
       requestAnimationFrame(function () {
         requestAnimationFrame(renderBarcode);
@@ -338,7 +356,7 @@
     }
 
     /* ---------- الإرسال ---------- */
-    document.getElementById('regForm').addEventListener('submit', async function (ev) {
+    document.getElementById('regForm').addEventListener('submit', function (ev) {
       ev.preventDefault();
 
       const name = cleanName(document.getElementById('custName').value).replace(/\s+/g, ' ').trim();
@@ -355,23 +373,18 @@
       }
 
       customer = { name: name, email: email, phone: phone };
-      mode = 'phone'; // الافتراضي الأسرع والأضمن للقراءة
-      document.querySelectorAll('#modeSeg button').forEach(function (b) {
-        b.classList.toggle('on', b.dataset.mode === 'phone');
-      });
+
+      // نظهر الباركود الأول (عشان ناخد صلاحية Fullscreen من ضغطة الزرار)
+      openBarcode();
 
       if (SUBMIT_URL) {
-        try {
-          await fetch(SUBMIT_URL, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({ name: name, email: email, phone: phone })
-          });
-        } catch (e) { /* لا نمنع ظهور الباركود لو فشل الإرسال */ }
+        fetch(SUBMIT_URL, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+          body: new URLSearchParams({ name: name, email: email, phone: phone })
+        }).catch(function () { /* لا نمنع ظهور الباركود لو فشل الإرسال */ });
       }
-
-      openBarcode();
     });
 
     /* ---------- زر التعديل ---------- */
@@ -379,6 +392,9 @@
       document.getElementById('barcodeScreen').style.display = 'none';
       barcodeOpen = false;
       keepAwake(false);
+      try {
+        if (screen.orientation && screen.orientation.unlock) screen.orientation.unlock();
+      } catch (e) { /* تجاهل */ }
       if (document.fullscreenElement) {
         document.exitFullscreen().catch(function () {});
       }
