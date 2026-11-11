@@ -32,6 +32,9 @@
       user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
     }
 
+    /* المسرح: بيتلف 90° لو الموبايل اتحط عرضي، عشان الباركود يفضل بوضع portrait دايمًا */
+    #bcStage { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform-origin: 0 0; }
+
     /* الرسم بياخد الشاشة كلها بالكامل — مفيش أي UI بيقص منه */
     #barcodeAll { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 
@@ -100,6 +103,7 @@
 
   <!-- شاشة الباركود: باركود واحد فيه كل البيانات -->
   <div id="barcodeScreen">
+  <div id="bcStage">
     <canvas id="barcodeAll"></canvas>
 
     <div class="scan-top">
@@ -111,6 +115,7 @@
     </div>
 
     <div class="scan-foot" id="scanHint">سطوع كامل · 10–20 سم</div>
+  </div>
   </div>
 
   <script>
@@ -170,9 +175,38 @@
       return c;
     }
 
+    /* ---------- إجبار وضع البورتريت ---------- */
+    function lockPortrait() {
+      try {
+        if (screen.orientation && screen.orientation.lock) {
+          screen.orientation.lock('portrait').catch(function () {});
+        }
+      } catch (e) { /* مش كل المتصفحات بتدعمه */ }
+    }
+
+    // لو الشاشة عرضية فعليًا: نلف المسرح 90° فيفضل شكل الباركود بورتريت
+    function applyForcedPortrait() {
+      const stage = document.getElementById('bcStage');
+      const W = window.innerWidth, H = window.innerHeight;
+      if (W > H) {
+        const type = (screen.orientation && screen.orientation.type) || '';
+        const cw = type.indexOf('secondary') !== -1;   // اتلف في الاتجاه التاني
+        stage.style.width = H + 'px';
+        stage.style.height = W + 'px';
+        stage.style.transform = cw
+          ? 'translate(' + W + 'px,0) rotate(90deg)'
+          : 'translate(0,' + H + 'px) rotate(-90deg)';
+      } else {
+        stage.style.width = '100%';
+        stage.style.height = '100%';
+        stage.style.transform = 'none';
+      }
+    }
+
     /* ---------- الرسم: الشاشة كلها + لف طبيعي على الموبايل ---------- */
     function renderBarcode() {
       if (!customer) return;
+      applyForcedPortrait();
 
       const cv = document.getElementById('barcodeAll');
       const ctx = cv.getContext('2d');
@@ -283,6 +317,7 @@
     });
 
     document.addEventListener('fullscreenchange', function () {
+      if (document.fullscreenElement) lockPortrait();
       fsBtn.textContent = document.fullscreenElement ? 'تصغير' : 'تكبير';
       setTimeout(scheduleRender, 150);
     });
@@ -308,6 +343,7 @@
       } catch (e) { /* تجاهل */ }
 
       keepAwake(true);
+      lockPortrait();
 
       // ننتظر لقطة رسم واحدة عشان الأبعاد تتحسب صح
       requestAnimationFrame(function () {
