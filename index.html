@@ -2,85 +2,55 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <meta name="theme-color" content="#0f172a">
-  <title>تسجيل بيانات العميل</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ravin-Customer</title>
   <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: 'Cairo', system-ui, sans-serif; background-color: #f8fafc; color: #0f172a; padding: 16px; line-height: 1.5; }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', system-ui, sans-serif; }
+    body { background-color: #f8fafc; color: #0f172a; padding: 16px; line-height: 1.5; }
     .container { max-width: 520px; margin: 0 auto; }
     .card { background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin-bottom: 20px; }
     .header-banner { background: linear-gradient(135deg, #0f172a, #1e1b4b); color: white; border-radius: 16px; padding: 24px; margin-bottom: 20px; text-align: center; }
-    .header-banner h1 { font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+    .header-banner h1 { font-size: 24px; font-weight: 800; letter-spacing: 0.5px; }
     .header-banner p { font-size: 13px; color: #cbd5e1; }
     .form-group { margin-bottom: 16px; }
     .form-group label { display: block; font-size: 13px; font-weight: 700; margin-bottom: 6px; color: #1e293b; }
-    .form-group input { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 16px; outline: none; transition: border 0.2s, box-shadow 0.2s; font-family: 'Cairo', system-ui, sans-serif; }
+    .form-group input { width: 100%; padding: 12px 14px; border-radius: 10px; border: 1px solid #cbd5e1; font-size: 16px; outline: none; transition: border 0.2s, box-shadow 0.2s; }
     .form-group input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px #e0e7ff; }
-    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; font-size: 14px; font-weight: 700; border-radius: 10px; border: none; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 20px; font-size: 14px; font-weight: 700; border-radius: 10px; border: none; cursor: pointer; transition: all 0.2s; }
     .btn-primary { background: #0f172a; color: white; width: 100%; }
     .btn-primary:hover { background: #1e293b; }
+    .btn-secondary { background: #f1f5f9; color: #334155; width: 100%; margin-top: 8px; }
+    .btn-secondary:hover { background: #e2e8f0; }
 
-    /* ================= شاشة الباركود ================= */
-    #barcodeScreen {
-      display: none; position: fixed; inset: 0; z-index: 99;
-      background: #ffffff; color: #000000; overflow: hidden;
-      user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent;
-    }
-
-    /* المسرح: بيتلف 90° لو الموبايل اتحط عرضي، عشان الباركود يفضل بوضع portrait دايمًا */
-    #bcStage { position: absolute; left: 0; top: 0; width: 100%; height: 100%; transform-origin: 0 0; }
-
-    /* الرسم بياخد الشاشة كلها بالكامل — مفيش أي UI بيقص منه */
-    #barcodeAll { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-
-    /* شريط علوي رفيع جدًا فوق المنطقة البيضا (الـ Quiet Zone) */
-    .scan-top {
-      position: absolute; top: 0; left: 0; right: 0; z-index: 2;
-      display: flex; align-items: center; gap: 6px;
-      min-height: 24px; padding: 2px 8px;
-      background: #ffffff;
-    }
-    .scan-top .nm {
-      flex: 1 1 auto; min-width: 0; font-size: 12px; font-weight: 800; line-height: 1.2;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      direction: ltr; text-align: right;
-    }
-    .scan-actions { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
-    .chip {
-      border: 1px solid #cbd5e1; background: #ffffff; color: #334155; border-radius: 999px;
-      padding: 3px 9px; font: inherit; font-size: 11px; font-weight: 700; line-height: 1.3; cursor: pointer;
-    }
-
-    /* شريط سفلي رفيع للتلميح */
-    .scan-foot {
-      position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
-      display: flex; align-items: center; justify-content: center;
-      min-height: 16px; padding: 1px 8px;
-      background: #ffffff; font-size: 10px; font-weight: 600; color: #94a3b8;
-      white-space: nowrap; overflow: hidden;
-    }
+    #barcodeScreen { display: none; }
+    .barcode-card { background: #ffffff; border: 2px solid #cbd5e1; border-radius: 14px; padding: 16px 10px; text-align: center; }
+    .barcode-item { margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1px dashed #e2e8f0; }
+    .barcode-item:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+    .barcode-title { font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 4px; }
+    .barcode-item svg { display: block; width: 100%; height: auto; margin: 0 auto; background: #ffffff; }
+    .barcode-val { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #334155; margin-top: 2px; word-break: break-all; }
+    .hint { font-size: 12px; color: #64748b; text-align: center; margin: 10px 0 0; }
   </style>
 </head>
 <body>
 
   <div class="container">
+
     <!-- شاشة إدخال البيانات -->
     <div id="formScreen">
       <div class="header-banner">
-        <h1>تسجيل بيانات العميل</h1>
-        <p>من فضلك اكتب بياناتك ثم اضغط إرسال</p>
+        <h1>Ravin-Customer</h1>
       </div>
 
       <div class="card">
         <form id="regForm" novalidate>
           <div class="form-group">
-            <label for="custName">الاسم بالكامل (بالإنجليزي)</label>
-            <input type="text" id="custName" placeholder="Ahmed Mahmoud" dir="ltr" autocomplete="name" autocapitalize="words" required>
+            <label for="custName">الاسم بالكامل</label>
+            <input type="text" id="custName" placeholder="مثال: أحمد محمود" autocomplete="name" required>
           </div>
 
           <div class="form-group">
@@ -90,7 +60,7 @@
 
           <div class="form-group">
             <label for="custPhone">رقم الموبايل</label>
-            <input type="tel" id="custPhone" placeholder="01012345678" dir="ltr" inputmode="tel" autocomplete="tel" style="font-family: 'JetBrains Mono', monospace; font-weight: 700;" required>
+            <input type="tel" id="custPhone" placeholder="01012345678" dir="ltr" inputmode="tel" autocomplete="tel" style="font-family: 'JetBrains Mono'; font-weight: bold;" required>
           </div>
 
           <p id="errorMsg" style="color:#b91c1c; font-size:13px; font-weight:700; margin-bottom:12px; display:none;"></p>
@@ -99,60 +69,76 @@
         </form>
       </div>
     </div>
-  </div>
 
-  <!-- شاشة الباركود: باركود واحد فيه كل البيانات -->
-  <div id="barcodeScreen">
-  <div id="bcStage">
-    <canvas id="barcodeAll"></canvas>
+    <!-- شاشة الباركود (تظهر بعد الإرسال على موبايل العميل) -->
+    <div id="barcodeScreen">
+      <div class="barcode-card">
+        <h2 id="displayName" style="font-size: 20px; font-weight: 800; margin-bottom: 12px;"></h2>
 
-    <div class="scan-top">
-      <span class="nm" id="displayName"></span>
-      <div class="scan-actions">
-        <button type="button" class="chip" id="fsBtn">تكبير</button>
-        <button type="button" class="chip" id="editBtn">✕ تعديل</button>
+        <div class="barcode-item">
+          <div class="barcode-title">1. الاسم + الإيميل</div>
+          <svg id="barcodeNameEmail"></svg>
+          <div class="barcode-val" id="valNameEmail" dir="ltr"></div>
+        </div>
+
+        <div class="barcode-item">
+          <div class="barcode-title">2. رقم الموبايل</div>
+          <svg id="barcodePhone"></svg>
+          <div class="barcode-val" id="valPhone" dir="ltr"></div>
+        </div>
       </div>
+
+      <p class="hint">الباركود الأول فيه Tab بين الاسم والإيميل وفي آخره، والتاني فيه Tab في آخره. ارفع سطوع الشاشة لأعلى درجة لتسهيل المسح.</p>
+      <button type="button" class="btn btn-secondary" id="editBtn">تعديل البيانات</button>
     </div>
 
-    <div class="scan-foot" id="scanHint">سطوع كامل · 10–20 سم</div>
-  </div>
   </div>
 
   <script>
-    /* =========================================================================
-       باركود واحد Code 128 فيه:  الاسم [Tab] الإيميل [Tab] الموبايل
-       -------------------------------------------------------------------------
-       ليه التعديل ده بيخلي السكانر يقراه؟
-       1) الباركود مش "فونت" — هو خطوط بتترسم بالبكسل. أي فونت باركود بيبقى أسوأ
-          لأن الكيرنينج والـ Hinting بيغيّروا عرض الخطوط. JsBarcode أدق.
-       2) المساحة المستخدمة للباركود = الشاشة بالكامل (مفيش هوامش أو أشرطة تاكل منها).
-       3) على الموبايل بالطول الباركود بيتلف 90° وقت الرسم نفسه (مش CSS transform)
-          عشان الطول المتاح يبقى طول الشاشة (844px) بدل عرضها (390px) = خطوط أتخن.
-       4) عرض كل خط = عدد صحيح من بكسلات الشاشة + أسود/أبيض نقي بدون Blur،
-          وده اللي بيخلي السكانر يفرّق بين الخطوط بسرعة.
-       ========================================================================= */
+    // اختياري: ضع هنا رابط استقبال البيانات (Google Apps Script / Formspree ...) ليصلك ما يكتبه العميل.
+    // لو تركته فاضي، البيانات لا تُرسل لأي مكان (GitHub Pages لا يحفظ بيانات).
+    const SUBMIT_URL = '';
 
-    const SUBMIT_URL = '';          // اختياري: رابط استقبال البيانات
-    const FORMAT = 'CODE128';       // أفضل باركود 1D للبيانات المتغيرة
-    const QUIET_MODULES = 10;       // الهامش الأبيض المطلوب حوالين الباركود
+    function transliterate(ar) {
+      if (!ar) return 'CUSTOMER';
+      if (/^[a-zA-Z0-9\s\-]+$/.test(ar)) return ar.toUpperCase();
+      const dict = { 'محمد': 'MOHAMED', 'احمد': 'AHMED', 'أحمد': 'AHMED', 'محمود': 'MAHMOUD', 'علي': 'ALI', 'خالد': 'KHALED', 'حسن': 'HASSAN', 'عمر': 'OMAR' };
+      const words = ar.trim().split(/\s+/);
+      return words.map(w => dict[w] || 'CUST').join('-');
+    }
 
-    let customer = null;            // { name, email, phone }
-    let barcodeOpen = false;
-    let wakeLock = null;
-    let resizeRaf = 0;
-
-    /* ---------- تنظيف الاسم ---------- */
-    function cleanName(v) { return v.replace(/[^A-Za-z .'\-]/g, ''); }
-
-    document.getElementById('custName').addEventListener('input', function () {
-      const cleaned = cleanName(this.value);
-      if (cleaned !== this.value) {
-        this.value = cleaned;
-        showError('اكتب الاسم بالحروف الإنجليزية فقط.');
-      } else if (document.getElementById('errorMsg').innerText.indexOf('الإنجليزية') !== -1) {
-        showError('');
+    // يخلي الباركود يتمدد على عرض الشاشة بدل ما يخرج عنها
+    function fitSvg(id) {
+      const svg = document.getElementById(id);
+      const w = svg.getAttribute('width'), h = svg.getAttribute('height');
+      if (!svg.getAttribute('viewBox') && w && h) {
+        svg.setAttribute('viewBox', '0 0 ' + parseFloat(w) + ' ' + parseFloat(h));
       }
-    });
+      svg.removeAttribute('width');
+      svg.removeAttribute('height');
+    }
+
+    // Code 128 بيدعم حرف Tab، فبنضيفه في آخر كل باركود
+    function drawBarcode(svgId, value) {
+      try {
+        JsBarcode('#' + svgId, value + '\t', {
+          format: 'CODE128', width: 2, height: 80, displayValue: false, margin: 14
+        });
+        fitSvg(svgId);
+      } catch (e) { console.error(e); }
+    }
+
+    function generateBarcodes(name, email, phone) {
+      const latinName = transliterate(name);
+      document.getElementById('displayName').innerText = name;
+      document.getElementById('valNameEmail').innerText = latinName + '  [TAB]  ' + email;
+      document.getElementById('valPhone').innerText = phone;
+
+      // باركود 1: الاسم + Tab + الإيميل (والـ Tab الأخير بيتضاف في drawBarcode)
+      drawBarcode('barcodeNameEmail', latinName + '\t' + email);
+      // باركود 2: رقم الموبايل
+      drawBarcode('barcodePhone', phone);
+    }
 
     function showError(msg) {
       const el = document.getElementById('errorMsg');
@@ -160,237 +146,37 @@
       el.style.display = msg ? 'block' : 'none';
     }
 
-    /* ---------- بناء باركود على كانفس منفصل ---------- */
-    function buildBarcodeCanvas(text, moduleWidth, barHeight) {
-      const c = document.createElement('canvas');
-      JsBarcode(c, text, {
-        format: FORMAT,
-        width: moduleWidth,
-        height: barHeight,
-        displayValue: false,
-        margin: 0,
-        marginLeft: QUIET_MODULES * moduleWidth,
-        marginRight: QUIET_MODULES * moduleWidth
-      });
-      return c;
-    }
-
-    /* ---------- إجبار وضع البورتريت ---------- */
-    function lockPortrait() {
-      try {
-        if (screen.orientation && screen.orientation.lock) {
-          screen.orientation.lock('portrait').catch(function () {});
-        }
-      } catch (e) { /* مش كل المتصفحات بتدعمه */ }
-    }
-
-    // لو الشاشة عرضية فعليًا: نلف المسرح 90° فيفضل شكل الباركود بورتريت
-    function applyForcedPortrait() {
-      const stage = document.getElementById('bcStage');
-      const W = window.innerWidth, H = window.innerHeight;
-      if (W > H) {
-        const type = (screen.orientation && screen.orientation.type) || '';
-        const cw = type.indexOf('secondary') !== -1;   // اتلف في الاتجاه التاني
-        stage.style.width = H + 'px';
-        stage.style.height = W + 'px';
-        stage.style.transform = cw
-          ? 'translate(' + W + 'px,0) rotate(90deg)'
-          : 'translate(0,' + H + 'px) rotate(-90deg)';
-      } else {
-        stage.style.width = '100%';
-        stage.style.height = '100%';
-        stage.style.transform = 'none';
-      }
-    }
-
-    /* ---------- الرسم: الشاشة كلها + لف طبيعي على الموبايل ---------- */
-    function renderBarcode() {
-      if (!customer) return;
-      applyForcedPortrait();
-
-      const cv = document.getElementById('barcodeAll');
-      const ctx = cv.getContext('2d');
-      const d = Math.max(1, window.devicePixelRatio || 1);
-
-      const cssW = cv.clientWidth;
-      const cssH = cv.clientHeight;
-      if (cssW < 80 || cssH < 60) return;
-
-      const vw = Math.max(1, Math.floor(cssW * d));
-      const vh = Math.max(1, Math.floor(cssH * d));
-
-      if (cv.width !== vw) cv.width = vw;
-      if (cv.height !== vh) cv.height = vh;
-
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.imageSmoothingEnabled = false;
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, vw, vh);
-
-      const portrait = cssH > cssW;
-      const text = customer.name + '\t' + customer.email + '\t' + customer.phone;
-
-      // 1) قياس عدد الموديولات المطلوبة للنص
-      const probe = document.createElement('canvas');
-      JsBarcode(probe, text, { format: FORMAT, width: 1, height: 1, displayValue: false, margin: 0 });
-      const modules = probe.width;
-      if (!modules) return;
-
-      // 2) الطول المتاح = طول الشاشة بالكامل (بدون أي خصم)
-      //    ارتفاع الخطوط = العرض الكامل في الوضع الطولي، وارتفاع الشاشة في العرضي
-      const lengthAvailable = portrait ? vh : vw;
-      const topBar = Math.round(28 * d);     // الشريط العلوي (فوق المنطقة البيضا)
-      const bottomBar = Math.round(18 * d);  // الشريط السفلي
-      const barHeight = portrait ? vw : (vh - topBar - bottomBar);
-      if (lengthAvailable < 100 || barHeight < 50) return;
-
-      // 3) عرض الموديول = عدد صحيح من بكسلات الشاشة (مفيش كسور = مفيش Blur)
-      let w = Math.floor(lengthAvailable / (modules + QUIET_MODULES * 2));
-      if (w < 1) w = 1;
-
-      const bars = buildBarcodeCanvas(text, w, barHeight);
-      const codeLen = bars.width;
-
-      // لو الباركود أطول من المساحة المتاحة نصغّره بالكامل بدل ما يتقص طرفه
-      const overflow = codeLen > lengthAvailable;
-      const drawLen = Math.min(codeLen, lengthAvailable);
-      ctx.imageSmoothingEnabled = overflow;
-
-      // 4) الرسم على الشاشة
-      if (portrait) {
-        // ندير الرسم 90° بنفس الكانفس → الطول ياخد طول الشاشة كله
-        const x = Math.round((vw - barHeight) / 2);
-        const y = Math.max(0, Math.round((vh - drawLen) / 2));
-        ctx.save();
-        ctx.translate(x + barHeight, y);
-        ctx.rotate(Math.PI / 2);
-        ctx.drawImage(bars, 0, 0, codeLen, barHeight, 0, 0, drawLen, barHeight);
-        ctx.restore();
-
-        document.getElementById('scanHint').textContent = overflow
-          ? 'الباركود طويل على الشاشة دي · جرّب شاشة أكبر'
-          : 'سطوع كامل · 10–20 سم';
-      } else {
-        const x = Math.max(0, Math.round((vw - drawLen) / 2));
-        const y = topBar;
-        ctx.drawImage(bars, 0, 0, codeLen, barHeight, x, y, drawLen, barHeight);
-
-        document.getElementById('scanHint').textContent = 'سطوع كامل · 10–20 سم';
-      }
-    }
-
-    function scheduleRender() {
-      cancelAnimationFrame(resizeRaf);
-      resizeRaf = requestAnimationFrame(function () {
-        if (barcodeOpen) renderBarcode();
-      });
-    }
-
-    /* ---------- إبقاء الشاشة صاحية ---------- */
-    async function keepAwake(on) {
-      try {
-        if (on && 'wakeLock' in navigator && !wakeLock) {
-          wakeLock = await navigator.wakeLock.request('screen');
-          wakeLock.addEventListener('release', function () { wakeLock = null; });
-        } else if (!on && wakeLock) {
-          await wakeLock.release();
-          wakeLock = null;
-        }
-      } catch (e) { /* تجاهل */ }
-    }
-
-    document.addEventListener('visibilitychange', function () {
-      if (document.visibilityState === 'visible' && barcodeOpen) keepAwake(true);
-    });
-
-    /* ---------- تكبير الشاشة ---------- */
-    const fsBtn = document.getElementById('fsBtn');
-    fsBtn.addEventListener('click', async function () {
-      try {
-        if (!document.fullscreenElement) {
-          await document.getElementById('barcodeScreen').requestFullscreen();
-        } else {
-          await document.exitFullscreen();
-        }
-      } catch (e) { /* تجاهل */ }
-      setTimeout(scheduleRender, 300);
-    });
-
-    document.addEventListener('fullscreenchange', function () {
-      if (document.fullscreenElement) lockPortrait();
-      fsBtn.textContent = document.fullscreenElement ? 'تصغير' : 'تكبير';
-      setTimeout(scheduleRender, 150);
-    });
-
-    /* ---------- إعادة الرسم عند أي تغيير في المقاس ---------- */
-    window.addEventListener('resize', scheduleRender);
-    window.addEventListener('orientationchange', function () { setTimeout(scheduleRender, 300); });
-    if (window.visualViewport) window.visualViewport.addEventListener('resize', scheduleRender);
-
-    /* ---------- إظهار شاشة الباركود ---------- */
-    function openBarcode() {
-      document.getElementById('displayName').textContent = customer.name;
-
-      const scr = document.getElementById('barcodeScreen');
-      scr.style.display = 'block';
-      barcodeOpen = true;
-
-      // نستغل الشاشة كلها: Fullscreen لو المتصفح سامح (بيشيل شريط العنوان)
-      try {
-        if (!document.fullscreenElement && scr.requestFullscreen) {
-          scr.requestFullscreen().catch(function () {});
-        }
-      } catch (e) { /* تجاهل */ }
-
-      keepAwake(true);
-      lockPortrait();
-
-      // ننتظر لقطة رسم واحدة عشان الأبعاد تتحسب صح
-      requestAnimationFrame(function () {
-        requestAnimationFrame(renderBarcode);
-      });
-    }
-
-    /* ---------- الإرسال ---------- */
-    document.getElementById('regForm').addEventListener('submit', function (ev) {
+    document.getElementById('regForm').addEventListener('submit', async function (ev) {
       ev.preventDefault();
-
-      const name = cleanName(document.getElementById('custName').value).replace(/\s+/g, ' ').trim();
+      const name = document.getElementById('custName').value.trim();
       const email = document.getElementById('custEmail').value.trim();
-      const phone = document.getElementById('custPhone').value.replace(/[^\d+]/g, '');
+      const phone = document.getElementById('custPhone').value.trim();
 
-      if (!/^[A-Za-z]/.test(name)) return showError('من فضلك اكتب الاسم بالحروف الإنجليزية.');
+      if (!name) return showError('من فضلك اكتب الاسم.');
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError('من فضلك اكتب بريد إلكتروني صحيح.');
       if (!/^\+?[0-9]{10,15}$/.test(phone)) return showError('من فضلك اكتب رقم موبايل صحيح (أرقام فقط).');
       showError('');
 
-      if (typeof JsBarcode === 'undefined') {
-        return showError('مكتبة الباركود لم تُحمّل. تأكد من الاتصال بالإنترنت وحدّث الصفحة.');
-      }
-
-      customer = { name: name, email: email, phone: phone };
-
-      // نظهر الباركود الأول (عشان ناخد صلاحية Fullscreen من ضغطة الزرار)
-      openBarcode();
-
       if (SUBMIT_URL) {
-        fetch(SUBMIT_URL, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-          body: new URLSearchParams({ name: name, email: email, phone: phone })
-        }).catch(function () { /* لا نمنع ظهور الباركود لو فشل الإرسال */ });
+        try {
+          await fetch(SUBMIT_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ name: name, email: email, phone: phone })
+          });
+        } catch (e) { /* لا نمنع ظهور الباركود لو فشل الإرسال */ }
       }
+
+      generateBarcodes(name, email, phone);
+      document.getElementById('formScreen').style.display = 'none';
+      document.getElementById('barcodeScreen').style.display = 'block';
+      window.scrollTo(0, 0);
     });
 
-    /* ---------- زر التعديل ---------- */
     document.getElementById('editBtn').addEventListener('click', function () {
       document.getElementById('barcodeScreen').style.display = 'none';
-      barcodeOpen = false;
-      keepAwake(false);
-      if (document.fullscreenElement) {
-        document.exitFullscreen().catch(function () {});
-      }
+      document.getElementById('formScreen').style.display = 'block';
     });
   </script>
 </body>
