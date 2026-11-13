@@ -59,18 +59,18 @@
       <div class="card">
         <form id="regForm" novalidate>
           <div class="form-group">
-            <label for="custName">الاسم بالكامل</label>
-            <input type="text" id="custName" placeholder="مثال: أحمد محمود" autocomplete="name" required>
+            <label for="custName">الاسم</label>
+            <input type="text" id="custName" dir="ltr" autocomplete="name" autocapitalize="words" required>
           </div>
 
           <div class="form-group">
             <label for="custEmail">البريد الإلكتروني</label>
-            <input type="email" id="custEmail" placeholder="ahmed@example.com" dir="ltr" autocomplete="email" required>
+            <input type="email" id="custEmail" dir="ltr" autocomplete="email" required>
           </div>
 
           <div class="form-group">
             <label for="custPhone">رقم الموبايل</label>
-            <input type="tel" id="custPhone" placeholder="01012345678" dir="ltr" inputmode="tel" autocomplete="tel" style="font-family: 'JetBrains Mono'; font-weight: bold;" required>
+            <input type="tel" id="custPhone" dir="ltr" inputmode="tel" autocomplete="tel" style="font-family: 'JetBrains Mono'; font-weight: bold;" required>
           </div>
 
           <p id="errorMsg" style="color:#b91c1c; font-size:13px; font-weight:700; margin-bottom:12px; display:none;"></p>
@@ -164,6 +164,16 @@
       el.style.display = msg ? 'block' : 'none';
     }
 
+    const NAME_ERR = 'اكتب اسمك بالإنجليزي (English) من فضلك.';
+    const hasArabic = v => /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(v);
+    // أول اسم بس
+    const firstName = v => v.trim().split(/\s+/)[0] || '';
+
+    document.getElementById('custName').addEventListener('input', function () {
+      if (hasArabic(this.value)) showError(NAME_ERR);
+      else if (document.getElementById('errorMsg').innerText === NAME_ERR) showError('');
+    });
+
     document.getElementById('regForm').addEventListener('submit', async function (ev) {
       ev.preventDefault();
       const name = document.getElementById('custName').value.trim();
@@ -171,6 +181,7 @@
       const phone = document.getElementById('custPhone').value.trim();
 
       if (!name) return showError('من فضلك اكتب الاسم.');
+      if (hasArabic(name) || !/^[A-Za-z]/.test(name)) return showError(NAME_ERR);
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return showError('من فضلك اكتب بريد إلكتروني صحيح.');
       if (!/^\+?[0-9]{10,15}$/.test(phone)) return showError('من فضلك اكتب رقم موبايل صحيح (أرقام فقط).');
       showError('');
@@ -186,7 +197,7 @@
         } catch (e) { /* لا نمنع ظهور الباركود لو فشل الإرسال */ }
       }
 
-      generateBarcodes(name, email, phone);
+      generateBarcodes(firstName(name), email, phone);
       document.getElementById('formScreen').style.display = 'none';
       document.getElementById('barcodeScreen').style.display = 'block';
       window.scrollTo(0, 0);
